@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ProjectOppression</title>
+  <script>window.$ = window.jQuery = require('./jquery.min.js');</script>
+  <script src="jquery.color.min.js"></script>
+  <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="submenu.css" rel="stylesheet">
+  <script src="bootstrap/js/bootstrap.min.js"></script>
+  <script src="socket.io.js"></script>
+  <style>
+    .vjs-big-play-button {
+      visibility: hidden;
+    }
+
+    .navbar {
+      -webkit-app-region: drag;
+    }
+
+    .navbar li {
+      -webkit-app-region: no-drag;
+    }
+
+    .navbar .navbar-toggle {
+      -webkit-app-region: no-drag;
+    }
+
+    video {
+      background-color: black;
+    }
+
+    body {
+      overflow: hidden;
+      padding-right: 0px !important;
+    }
+
+    .message {
+      margin: 0px;
+    }
+
+    .status-message {
+      color: gray;
+      font-size: 0.9em;
+    }
+
+    .chat-message > .message-name {
+      color: blue;
+      font-weight: bold;
+    }
+
+    #queue-panel .list-group-item {
+      padding: 4px 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #queue-panel .list-group-item > span.queue-icon {
+      float: right;
+      padding: 2px 3px; /* y x */
+      cursor: pointer;
+      display: block;
+    }
+
+    #queue-panel .list-group-item > span.queue-icon.disabled {
+      color: gray;
+      cursor: default;
+    }
+
+    #members-group .list-group-item {
+      padding: 4px 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .members-icon {
+      float: right;
+      padding: 2px 3px; /* y x */
+      cursor: pointer;
+      display: block;
+    }
+
+    .caret-right {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      margin-left: 4px;
+      vertical-align: middle;
+      border-left: 4px dashed;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-default" role="navigation" id='nav'>
+    <div class="container-fluid">
+      <div class="navbar-header">
+       <a class="navbar-brand" id="app-title" href="#">Project Oppression</a>
+      </div>
+
+     <div>
+        <ul class="nav navbar-nav navbar-left">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Options <span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="#" id="seturl-toggle">Load URL</a></li>
+              <li><a href="#" id="seturl-youtube-toggle">Load YouTube URL</a></li>
+              <li><a href="#" id="set-local">Set local mirror</a></li>
+              <li><a href="#" id="stop-video">Stop</a></li>
+              <li><a href="#" id="restart-video">Restart</a></li>
+            </ul>
+          </li>
+          <li id="queue-menu" class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Queue <span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+            </ul>
+          </li>
+          <li id="room-label">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="#" id="joinroom-toggle">Join room</a></li>
+              <li><a href="#" id="members-toggle">Members</a></li>
+            </ul>
+          </li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="#" id="connect-toggle">Connect</a></li>
+          <li><a href="#" id="minimize-app"><img src="assets/minimize.png" id="minimize-app-img"></img></a></li>
+          <li><a href="#" id="maximize-app"><img src="assets/maximize.png" id="maximize-app-img"></img></a></li>
+          <li><a href="#" id="close-app"><img src="assets/close.png" id="close-app-img"></img></a></li>
+        </ul>
+      </div>
+   </div>
+  </nav>
+
+  <div class="modal fade" id="members" tabindex="-1" role="dialog" aria-labelledby="members-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="members-label">Members</h4>
+        </div>
+        <div class="modal-body" style="padding: 0px">
+          <ul class="list-group" id="members-group" style="margin-bottom: 0px"></ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="joinroom" tabindex="-1" role="dialog" aria-labelledby="joinroom-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="joinroom-label">Join room</h4>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <span class="input-group-addon">Room</span>
+            <input type="text" class="form-control" placeholder="##welcome" id="joinroom-room">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="joinroom-button">Join</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="connect" tabindex="-1" role="dialog" aria-labelledby="connect-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="connect-label">Connect to server</h4>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <span class="input-group-addon">Username</span>
+            <input type="text" class="form-control" placeholder="guest" id="connect-user">
+          </div>
+          <div class="panel panel-danger" style="display: none; margin-top: 10px" id="connect-error">
+            <div class="panel-heading">
+              <h3 class="panel-title">Error</h3>
+            </div>
+            <div class="panel-body"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="connect-button">Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="login" tabindex="-1" role="dialog" aria-labelledby="login-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="login-label">Log in</h4>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <span class="input-group-addon">Username</span>
+            <input type="text" class="form-control" placeholder="guest" id="login-user">
+          </div>
+          <div class="input-group">
+            <span class="input-group-addon">Password</span>
+            <input type="password" class="form-control" id="login-pass">
+          </div>
+          <div class="panel panel-danger" style="display: none; margin-top: 10px" id="login-error">
+            <div class="panel-heading">
+              <h3 class="panel-title">Error</h3>
+            </div>
+            <div class="panel-body"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="login-button">Log in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="register" tabindex="-1" role="dialog" aria-labelledby="register-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="register-label">Register</h4>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <span class="input-group-addon">Username</span>
+            <input type="text" class="form-control" placeholder="guest" id="register-user">
+          </div>
+          <div class="input-group">
+            <span class="input-group-addon">Password</span>
+            <input type="password" class="form-control" id="register-pass">
+          </div>
+          <div class="input-group">
+            <span class="input-group-addon">Confirm password</span>
+            <input type="password" class="form-control" id="register-pass-confirm">
+          </div>
+          <div class="panel panel-danger" style="display: none; margin-top: 10px" id="register-error">
+            <div class="panel-heading">
+              <h3 class="panel-title">Error</h3>
+            </div>
+            <div class="panel-body"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="register-button">Register</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="seturl" tabindex="-1" role="dialog" aria-labelledby="seturl-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="seturl-label">Change video URL</h4>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <span class="input-group-addon">URL</span>
+            <input type="text" class="form-control" placeholder="www.example.com/video.mp4" id="seturl-url">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="addtoqueue-button">Enqueue</button>
+          <button type="button" class="btn btn-primary" id="seturl-button">Play</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="seturl-youtube" tabindex="-1" role="dialog" aria-labelledby="seturl-youtube-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="seturl-youtube-label">Change video URL</h4>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <span class="input-group-addon">URL</span>
+            <input type="text" class="form-control" placeholder="www.youtube.com/abcdefghijk" id="seturl-youtube-url">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="addtoqueue-youtube-button">Enqueue</button>
+          <button type="button" class="btn btn-primary" id="seturl-youtube-button">Play</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="update-dialog" tabindex="-1" role="dialog" aria-labelledby="update-dialog-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title" id="update-dialog-label">Update available</h4>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="update-button">Download</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="height: 100%">
+    <div class="col-md-9 col-xs-9" id="main-content" style="height: 100%">
+      <div id="video-container" style="height: 100%">
+        <video id="video-player" preload="auto">
+        </video>
+        <canvas id="video-controls" style="position: fixed; bottom: 0px; left: 0px">
+        </canvas>
+      </div>
+    </div>
+    <div class="col-md-3 col-xs-3" style="border-style: none none none solid; border-color: #e7e7e7; padding: 0px; border-left: 0px" id="sidebar">
+      <div id="queue-panel" class="panel panel-default" style="padding: 0px; margin: 0px">
+        <div class="panel-heading">
+          <h3 class="panel-title">Queue <span class="caret"></span></h3>
+        </div>
+        <div class="panel-body" style="height: 150px; overflow-y: scroll; padding: 0px">
+          <ul class="list-group" style="margin-bottom: 0px"></ul>
+        </div>
+      </div>
+      <div id="chat-messages-container" style="position: relative;">
+        <div id="chat-messages" style="word-wrap: break-word; padding: 5px; padding-left: 10px; position: absolute; bottom: 0px; left: 0px; right: 0px;"></div>
+      </div>
+      <input type="text" id="chat-text" disabled="true" class="form-control" placeholder="Chat here" style="position: absolute; left: 0px; bottom: 0px; border-radius: 0px">
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
